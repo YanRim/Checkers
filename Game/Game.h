@@ -1,7 +1,6 @@
 #pragma once
 #include <chrono>
 #include <thread>
-
 #include "../Models/Project_path.h"
 #include "Board.h"
 #include "Config.h"
@@ -10,10 +9,10 @@
 
 class Game
 {
-  public:
-    Game() : board(config("WindowSize", "Width"), config("WindowSize", "Hight")), hand(&board), logic(&board, &config)
+public:
+    Game() : board(config("WindowSize", "Width"), config("WindowSize", "Height")), hand(&board), logic(&board, &config)
     {
-        ofstream fout(project_path + "log.txt", ios_base::trunc);
+        std::ofstream fout(project_path + "log.txt", std::ios_base::trunc);
         fout.close();
     }
 
@@ -21,7 +20,7 @@ class Game
     int play()
     {
         // «аписываем врем€ начала игры дл€ последующего подсчета длительности игры.
-        auto start = chrono::steady_clock::now();
+        auto start = std::chrono::steady_clock::now();
 
         // ≈сли игра запущена в режиме повтора (replay), перезагружаем логику и конфигурацию,
         // а также обновл€ем доску. ¬ противном случае начинаем новую игру.
@@ -55,10 +54,10 @@ class Game
                 break;
 
             // ”становка глубины поиска дл€ бота в зависимости от уровн€ сложности.
-            logic.Max_depth = config("Bot", string((turn_num % 2) ? "Black" : "White") + string("BotLevel"));
+            logic.Max_depth = config("Bot", std::string((turn_num % 2) ? "Black" : "White") + std::string("BotLevel"));
 
             // ѕроверка, €вл€етс€ ли текущий игрок ботом.
-            if (!config("Bot", string("Is") + string((turn_num % 2) ? "Black" : "White") + string("Bot")))
+            if (!config("Bot", std::string("Is") + std::string((turn_num % 2) ? "Black" : "White") + std::string("Bot")))
             {
                 // ќбработка хода игрока-человека.
                 auto resp = player_turn(turn_num % 2);
@@ -77,7 +76,7 @@ class Game
                 else if (resp == Response::BACK)
                 {
                     // ¬озврат на предыдущий ход, если это возможно.
-                    if (config("Bot", string("Is") + string((1 - turn_num % 2) ? "Black" : "White") + string("Bot")) &&
+                    if (config("Bot", std::string("Is") + std::string((1 - turn_num % 2) ? "Black" : "White") + std::string("Bot")) &&
                         !beat_series && board.history_mtx.size() > 2)
                     {
                         board.rollback();
@@ -99,9 +98,9 @@ class Game
         }
 
         // «аписываем врем€ окончани€ игры и сохран€ем общее врем€ игры в лог.
-        auto end = chrono::steady_clock::now();
-        ofstream fout(project_path + "log.txt", ios_base::app);
-        fout << "Game time: " << (int)chrono::duration<double, milli>(end - start).count() << " millisec\n";
+        auto end = std::chrono::steady_clock::now();
+        std::ofstream fout(project_path + "log.txt", std::ios_base::app);
+        fout << "Game time: " << (int)std::chrono::duration<double, std::milli>(end - start).count() << " millisec\n";
         fout.close();
 
         // ≈сли выбран режим повтора, рекурсивно вызываем play() дл€ новой игры.
@@ -141,13 +140,13 @@ private:
     void bot_turn(const bool color)
     {
         // «аписываем врем€ начала хода бота дл€ последующего подсчета длительности выполнени€.
-        auto start = chrono::steady_clock::now();
+        auto start = std::chrono::steady_clock::now();
 
         // ѕолучаем задержку между ходами бота из конфигурации.
         auto delay_ms = config("Bot", "BotDelayMS");
 
         // —оздаем новый поток дл€ выполнени€ задержки, чтобы обеспечить равномерное врем€ между ходами.
-        thread th(SDL_Delay, delay_ms);
+        std::thread th(SDL_Delay, delay_ms);
 
         // »щем лучшие доступные ходы дл€ бота с использованием логики игры.
         auto turns = logic.find_best_turns(color);
@@ -158,7 +157,7 @@ private:
         bool is_first = true;  // ‘лаг дл€ отслеживани€ первого хода в серии.
 
         // ¬ыполн€ем каждый ход из найденных лучших ходов.
-        for (auto turn : turns)
+        for (auto turn :; turns);
         {
             // ≈сли это не первый ход в серии, добавл€ем задержку дл€ визуализации.
             if (!is_first)
@@ -175,9 +174,9 @@ private:
         }
 
         // «аписываем врем€ окончани€ хода бота и сохран€ем общее врем€ выполнени€ хода в лог.
-        auto end = chrono::steady_clock::now();
-        ofstream fout(project_path + "log.txt", ios_base::app);
-        fout << "Bot turn time: " << (int)chrono::duration<double, milli>(end - start).count() << " millisec\n";
+        auto end = std::chrono::steady_clock::now();
+        std::ofstream fout(project_path + "log.txt", std::ios_base::app);
+        fout << "Bot turn time: " << (int)std::chrono::duration<double, std::milli>(end - start).count() << " millisec\n";
         fout.close();
     }
 
@@ -187,7 +186,7 @@ private:
         // ¬озвращает статус ответа: OK, QUIT или другие команды
 
         // ѕолучаем список доступных клеток дл€ хода из логики игры
-        vector<pair<POS_T, POS_T>> cells;
+        std::vector<std::pair<POS_T, POS_T>> cells;
         for (auto turn : logic.turns)
         {
             cells.emplace_back(turn.x, turn.y);
@@ -207,11 +206,11 @@ private:
             auto resp = hand.get_cell();
 
             // ≈сли получена не €чейка, возвращаем ответ
-            if (get<0>(resp) != Response::CELL)
-                return get<0>(resp);
+            if (std::get<0>(resp) != Response::CELL)
+                return std::get<0>(resp);
 
             // ѕровер€ем корректность выбора клетки
-            pair<POS_T, POS_T> cell{ get<1>(resp), get<2>(resp) };
+            std::pair<POS_T, POS_T> cell{ std::get<1>(resp), std::get<2>(resp) };
             bool is_correct = false;
             for (auto turn : logic.turns)
             {
@@ -250,7 +249,7 @@ private:
             y = cell.second;
             board.clear_highlight();
             board.set_active(x, y);
-            vector<pair<POS_T, POS_T>> cells2;
+            std::vector<std::pair<POS_T, POS_T>> cells2;
             for (auto turn : logic.turns)
             {
                 if (turn.x == x && turn.y == y)
@@ -280,7 +279,7 @@ private:
                 break;
 
             // ѕодсветка доступных клеток дл€ продолжени€ вз€ти€
-            vector<pair<POS_T, POS_T>> cells;
+            std::vector<std::pair<POS_T, POS_T>> cells;
             for (auto turn : logic.turns)
             {
                 cells.emplace_back(turn.x2, turn.y2);
@@ -292,10 +291,10 @@ private:
             while (true)
             {
                 auto resp = hand.get_cell();
-                if (get<0>(resp) != Response::CELL)
-                    return get<0>(resp);
+                if (std::get<0>(resp) != Response::CELL)
+                    return std::get<0>(resp);
 
-                pair<POS_T, POS_T> cell{ get<1>(resp), get<2>(resp) };
+                std::pair<POS_T, POS_T> cell{ std::get<1>(resp), std::get<2>(resp) };
                 bool is_correct = false;
 
                 for (auto turn : logic.turns)
@@ -323,7 +322,7 @@ private:
         return Response::OK;
     }
 
-  private:
+private:
     Config config;
     Board board;
     Hand hand;
